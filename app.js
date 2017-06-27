@@ -32,6 +32,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 // route modules
 app.use(function timeLog (req, res, next) {
     console.log('Time: ', Date.now())
+    console.log(new Date())
     next()
 });
 app.use('/', index);
