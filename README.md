@@ -1,3 +1,3 @@
 # chopchop-node
 
-ㅂㅎㅅ ㅁㅊㅇ 
+repository for chopchop server 
