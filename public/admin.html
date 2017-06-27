@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>회원 관리 테스트</title>
+	</head>
+	<body>
+		<h1>회원 수정</h1>
+		<br>
+		<form method="put" action="/user" >
+			<table>
+				<tr>
+					<td><label>이메일</label></td>
+					<td><input type="email" name="email"></td>
+				</tr>
+			</table>
+			<input type="submit" value="수정" name=""/>
+		</form>
+		<h1>회원 삭제</h1>
+		<br>
+		<form method="delete" action="/user" if-none-match="*">
+			<table>
+				<tr>
+					<td><label>user_id</label></td>
+					<td><input type="number" name="id"/></td>
+				</tr>
+			</table>
+			<input type="submit" value="삭제" name="">
+		</form>
+	</body>
+</html>
