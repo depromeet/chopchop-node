@@ -113,10 +113,12 @@ function boardList(req, res) {
                 result.status = 'S';
                 res.status(200).json(result);
             }
-        }, function(err){
-            result.status = 'F';
-            result.reason = 'not find board response' + err;
-            res.status(400).json(result);
+        }, function(none){
+          models.Board.sequelize.query('select * from board order by board_popular DESC').then(function(board){
+            result.board = board[0];
+            result.status = 'S';
+            res.status(200).json(result);
+          })
         })
     })
 }
