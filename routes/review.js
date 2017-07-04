@@ -7,38 +7,38 @@ var models = require('../models');
 var async = require('async');
 
 // 리뷰 검색
-router.get('/', function(req, res) {
-  var data = {};
-  data.where = {};
-  // validate data
-  if('offset' in req.query) data.offset = req.query.offset;
-  if('limit' in req.query) data.limit = req.query.limit;
-  if('user_id' in req.query) data.where.review_uid = req.query.user_id;
-  if('board_id' in req.query) data.where.review_boardid = req.query.board_id;
-  if('res_id' in req.query) data.where.review_resid = req.query.res_id;
-
-  models.Review.findAll(data)
-  .then(function(reviews) {
-    if(!reviews || reviews.length==0) res.status(400).send('not found');
-
-    async.transform(reviews, function(acc, item, index, outerCallback) {
-      item.review_boardname = '';
-      async.parallel([
-        findUser(innerCallback),
-        findBoard(innerCallback),
-        findRestaurant(innerCallback)
-      ], function(err, result) {
-          acc.push(item);
-          outerCallback(null);
-      });
-    }, function(err, result) {
-      res.status(200).json(result);
-    });
-
-  }).catch(function(err) {
-    res.status(500).json(err);
-  });
-});
+// router.get('/', function(req, res) {
+//   var data = {};
+//   data.where = {};
+//   // validate data
+//   if('offset' in req.query) data.offset = req.query.offset;
+//   if('limit' in req.query) data.limit = req.query.limit;
+//   if('user_id' in req.query) data.where.review_uid = req.query.user_id;
+//   if('board_id' in req.query) data.where.review_boardid = req.query.board_id;
+//   if('res_id' in req.query) data.where.review_resid = req.query.res_id;
+//
+//   models.Review.findAll(data)
+//   .then(function(reviews) {
+//     if(!reviews || reviews.length==0) res.status(400).send('not found');
+//
+//     async.transform(reviews, function(acc, item, index, outerCallback) {
+//       item.review_boardname = '';
+//       async.parallel([
+//         findUser(innerCallback),
+//         findBoard(innerCallback),
+//         findRestaurant(innerCallback)
+//       ], function(err, result) {
+//           acc.push(item);
+//           outerCallback(null);
+//       });
+//     }, function(err, result) {
+//       res.status(200).json(result);
+//     });
+//
+//   }).catch(function(err) {
+//     res.status(500).json(err);
+//   });
+// });
 
 function findUser(innerCallback) {
   // 1
@@ -119,7 +119,7 @@ router.post('/', regisReview);
 // 리뷰 수정
 router.put('/:idx', modifyReview);
 
-// 리뷰 작성 post, body
+// 리뷰 작성 post, body'
 function regisReview(req, res){
     var reviewinfo = req.body,
         result = {
@@ -134,8 +134,6 @@ function regisReview(req, res){
     models.Review.create(reviewinfo).then(function(ret){
         res_score = reviewinfo.review_score;
         res_name  = reviewinfo.review_resname;
-        console.log(res_score);
-        console.log(res_name);
         models.Restaurant.update({res_score: res_score},{where:{res_name : res_name}}).then(function(){
             result.review_id = ret.review_id;
             result.status = 'S';
@@ -225,22 +223,18 @@ function popularReview(req, res){
 
     models.Review.sequelize.query('select * from review order by review_like desc').then(function(ret){
         if(ret == null) {
-            res.status(400);
             result.status = 'F';
             result.reason = 'not find board';
-            res.json(result);
+            res.status(200).json(result);
         } else {
-            console.log(ret[0]);
             result.status = 'S';
             result.review = ret[0];
-            res.json(result);
+            res.status(200).json(result);
         }
     }, function(err) {
-        console.log(err);
-        res.status(400);
         result.status = 'F';
         result.reason = err.message;
-        res.json(result);
+        res.status(400).json(result);
     })
 }
 
@@ -253,15 +247,13 @@ function certainReviewInfo(req, res) {
     if (!ret) {
       result.status = 'F';
       result.reason = 'not find review';
-      res.status(400).json(result);
+      res.status(200).json(result);
     } else {
-      console.log(ret);
       result.status = 'S';
       result.review = ret;
       res.status(200).json(result);
     }
   }, function(err) {
-    console.log(err);
     result.status = 'F';
     result.reason = err.message;
     res.status(500).json(result);
@@ -281,12 +273,11 @@ function deleteReview(req, res) {
     console.log(ret);
     if (ret == 1) {
       result.status = 'S';
-      result.review = ret;
       res.status(200).json(result);
     } else {
       result.status = 'F';
       result.reason = 'No review to delete';
-      res.status(400).json(result);
+      res.status(200).json(result);
     }
   }, function(err) {
     result.status = 'F';
@@ -308,11 +299,11 @@ function modifyReview(req, res) {
   }).then(function() {
     result.status = 'S';
     result.review_id = review_id;
-    res.json(result);
+    res.status(200).json(result);
   }, function(err) {
     result.status = 'F';
     result.reason = err.message;
-    res.json(result);
+    res.status(400).json(result);
   })
 }
 
