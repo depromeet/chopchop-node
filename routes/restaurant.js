@@ -55,7 +55,7 @@ function restaurantsList(req, res){
   var result = {};
   result.values = [];
 
-  models.Restaurant.findAll().then(function(restaurants) {
+  models.Restaurant.findAll({limit: 10}).then(function(restaurants) {
     for(var i=0; i<restaurants.length; i++) {
       result.values[i] = restaurants[i];
     }
