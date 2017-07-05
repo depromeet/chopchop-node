@@ -112,7 +112,7 @@ function findAll(req, res) {
 
 
   // dynamic parameter
-  if('res_id' in req.params) data.where.review_id = Number(req.params.res_id);
+  if('res_id' in req.params) data.where.res_id = Number(req.params.res_id);
 
   // query string
   if('popular' in req.query) data.order = 'res_popular DESC';
