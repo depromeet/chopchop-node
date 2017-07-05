@@ -8,11 +8,15 @@ var models     = require('../models');
 // 식당 등록
 router.post('/', regisRestaurant);
 
+//식당 검색
+// router.get('/search/:keyword', searchResByname);
+
 // 전체 식당 조회
-router.get('/', restaurantsList);
+router.get('/', findAll);
 
 // 특정 식당 조회
-router.get('/:res_id', certainRestaurants);
+router.get('/:res_id', findAll);
+// router.get('/:res_id', certainRestaurants);
 
 // // 별점 조회
 // router.get('/score/:res_id', restaurantsScore);
@@ -31,9 +35,6 @@ router.delete('/follow',unfollowRes);
 
 // 팔로우 한 식당 조회
 router.get('/follow/:idx', specialRes);
-
-//식당 검색
-router.get('/search/:keyword', searchResByname);
 
 // 식당 등록
 function regisRestaurant(req, res){
@@ -93,6 +94,68 @@ function certainRestaurants(req, res){
       .catch(function(err) {
           res.status(500).send('Something is broken!');
       });
+}
+
+function findAll(req, res) {
+  let result = {};
+  result.values = [];
+
+  let data = {};
+  data.where = {};
+
+  // TODO : validate data
+
+
+  // TODO : set default value
+  data.limit = 10;
+  data.order = 'res_popular DESC';
+
+
+  // dynamic parameter
+  if('res_id' in req.params) data.where.review_id = Number(req.params.res_id);
+
+  // query string
+  if('popular' in req.query) data.order = 'res_popular DESC';
+  if('offset' in req.query) data.offset = Number(req.query.offset);
+  if('limit' in req.query) data.limit = Number(req.query.limit);
+  if('name' in req.query) {
+    data.where.res_name = {};
+    data.where.res_name.like = '%' + req.query.name + '%';
+  }
+  if('address' in req.query) {
+    data.where.res_address = {};
+    data.where.res_address.like = '%' + req.query.address + '%';
+  }
+  if('style' in req.query) {
+    data.where.res_style = {};
+    data.where.res_style.like = '%' + req.query.style + '%';
+  }
+  if('note' in req.query) {
+    data.where.res_freenote = {};
+    data.where.res_freenote.like = '%' + req.query.note + '%';
+  }
+
+  models.Restaurant.findAll(data)
+  .then(restaurants => {
+    if(restaurants.length == 0) {
+      res.status(200).json({
+        status: 'Failure',
+        message: 'Not found'
+      });
+    } else {
+      res.status(200).json({
+        status: 'Success',
+        message: 'Found',
+        values: restaurants
+      });
+    }
+  })
+  .catch((err) => {
+    res.status(500).send({
+      status: 'Error',
+      message: err.message
+    });
+  });
 }
 
 // 식당 별점 조회
