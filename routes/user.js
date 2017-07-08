@@ -6,6 +6,7 @@ var router = express.Router();
 var models = require('../models');
 var jwt = require('jsonwebtoken');
 var aws = require('../aws/storage');
+var passport = require('passport');
 
 /**
  *  GET /users?limit={%d}&offset={%d}
@@ -41,35 +42,34 @@ router.post('/', (req, res) => {
   data.user_name = req.body.name;
   data.user_nickname = req.body.nickname;
   data.user_source = req.body.source;
-  
-  models.User.find({where: {user_email: req.body.email}})
-  .then((result) => {
-    if(Object.keys(result.dataValues).length > 0) {
-      res.status(200).json({
-        status: 'Failure',
-        message: 'Email already taken. Please try another one'
-      });
-    }
-    else {
-      // add user except image
-      models.User.create(data)
-      .then(function(user) {
-        res.status(200).json({
-          status: 'Success',
-          message: 'Signed up successfully.',
-          values: { user_id: user.dataValues.user_id }
-        });
-      });
-    }
-  })
-  .catch(function(err) {
-    res.status(500).json({
-      status: 'Error',
-      message: err.message
-    });
-  });
-});
 
+  models.User.find({where: {user_email: req.body.email}})
+    .then((result) => {
+      if(Object.keys(result.dataValues).length > 0) {
+        res.status(200).json({
+          status: 'Failure',
+          message: 'Email already taken. Please try another one'
+        });
+      }
+      else {
+        // add user except image
+        models.User.create(data)
+          .then((user) => {
+            res.status(200).json({
+              status: 'Success',
+              message: 'Signed up successfully.',
+              values: { user_id: user.dataValues.user_id }
+            });
+          });
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({
+        status: 'Error',
+        message: err.message
+      });
+    });
+});
 
 /**
  *  POST /users/login
@@ -162,7 +162,21 @@ router.delete('/', (req, res) => {
   // 'DELETE FROM tbl_user WHERE user_id = ?'
   res.status(200).send('DELETE /user/{user_id}');
 });
-
+/**
+ *  POST /users/loginpp
+ */
+router.post('/loginpp', (req, res, next) => {
+  console.log('dasfadfasdfd');
+  console.log(req.body);
+  next();
+}, passport.authenticate('local', {
+  failureRedirect: '/'
+}), (req, res) => {
+  res.status(200).json({
+    status: 'Success',
+    message: 'Login successfully',
+  });
+});
 
 function getUsers(req, res, user_id=null) {
   console.log('data');
@@ -195,7 +209,7 @@ function getUsers(req, res, user_id=null) {
     console.log('results:', results);
 
     res.status(200).json({
-      status: 'Success', 
+      status: 'Success',
       message: 'Found.',
       values: results
     });
@@ -219,7 +233,7 @@ function checkEmail(req, res) {
   .then((user) => {
     if (!user) {
       res.status(200).json({
-        status: 'Success', 
+        status: 'Success',
         message: 'Email is available.'
       });
     } else {

@@ -5,12 +5,13 @@ var config = require('../config/config.json').development;
 
 /* GET home page. */
 router.get('/', function(req, res) {
+  res.status(200).send('index.js');
   console.log('/routes/index.js');
   //res.render('index', { title: 'Express' });
 
   console.log('aws.config.update');
   aws.config.update({
-    accessKeyId     : config.aws_access_key, 
+    accessKeyId     : config.aws_access_key,
     secretAccessKey : config.aws_secret_key
   });
 
@@ -22,8 +23,8 @@ router.get('/', function(req, res) {
     region: 'Seoul'
   });
   var options = {
-    Bucket : "chopchopstorage", 
-    Key    : "sample" 
+    Bucket : "chopchopstorage",
+    Key    : "sample"
   };
 
   s3.getObject(options, function (error, data) {
@@ -37,8 +38,7 @@ router.get('/', function(req, res) {
       res.status(200);
       res.send(data.body);
     }
-  });  
+  });
 });
 
 module.exports = router;
-

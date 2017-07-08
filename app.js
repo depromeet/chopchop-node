@@ -6,6 +6,10 @@ var cookieParser = require('cookie-parser');
 var bodyParser   = require('body-parser');
 var session      = require('express-session');
 
+const passport      = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const models        = require('./models');
+
 // import routes/*.js
 var index           = require('./routes/index');
 var user            = require('./routes/user');
@@ -29,6 +33,58 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+
+
+
+// use session
+app.use(session({
+  key: 'sid', // 세션키
+  secret: 'secret', // 비밀키
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 1000 * 60 * 60 // 쿠키 유효기간 1시간
+  },
+}));
+
+
+// use passport
+app.use(passport.initialize()); // passport 구동
+app.use(passport.session()); // 세션 연결
+
+
+
+// passport
+passport.serializeUser((user, done) => { // Strategy 성공 시 호출됨
+  console.log('serialize:', user);
+  done(null, user); // 여기의 user가 deserializeUser의 첫 번째 매개변수로 이동
+});
+
+passport.deserializeUser((user, done) => { // 매개변수 user는 serializeUser의 done의 인자 user를 받은 것
+  console.log('deserialize:', user);
+  done(null, user);
+});
+
+passport.use(new LocalStrategy({
+    usernameField: 'id',
+    passwordField: 'password'
+  }, (id, password, done) => {
+    console.log('id:', id);
+  models.User.findOne({where: {user_email: id}}, (err, user) => {
+    console.log(user.dataValues);
+    if (!user) {
+      return done(null, false, { message: '존재하지 않는 아이디입니다' }); // 임의 에러 처리
+    }
+    else if(user.dataValues.user_password == password) {             // 검증 성공
+      return done(null, user);
+    }
+    else {
+      return done(null, false, { message: '비밀번호가 틀렸습니다' });  // 임의 에러 처리
+    }
+  })
+}));
+
+
 // route modules
 app.use(function timeLog (req, res, next) {
     console.log('Time: ', Date.now())
@@ -42,17 +98,6 @@ app.use('/reviews', review);
 app.use('/boards', board);
 app.use('/comments', review_comment);
 app.use('/responses', review_response);
-
-// use session
-app.use(session({
-  key: 'sid', // 세션키
-  secret: 'secret', // 비밀키
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    maxAge: 1000 * 60 * 60 // 쿠키 유효기간 1시간
-  }
-}));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
