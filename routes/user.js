@@ -162,20 +162,33 @@ router.delete('/', (req, res) => {
   // 'DELETE FROM tbl_user WHERE user_id = ?'
   res.status(200).send('DELETE /user/{user_id}');
 });
+
 /**
  *  POST /users/loginpp
  */
-router.post('/loginpp', (req, res, next) => {
-  console.log('dasfadfasdfd');
-  console.log(req.body);
-  next();
-}, passport.authenticate('local', {
-  failureRedirect: '/'
+router.post('/loginpp', passport.authenticate('local', {
+  failureRedirect: '/',
 }), (req, res) => {
   res.status(200).json({
     status: 'Success',
     message: 'Login successfully',
   });
+});
+
+router.get('/loginpp/1', (req, res) => {
+  models.User.find({ limit: 10 })
+    .then((user) => {
+      console.log(user.dataValues);
+      return console.log(setTimeout(function(){ console.log("Hello"); }, 3000));
+    })
+    .then(() => {
+      res.status(200).send('hi');
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+
+
 });
 
 function getUsers(req, res, user_id=null) {
