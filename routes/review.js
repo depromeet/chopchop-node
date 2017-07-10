@@ -5,6 +5,7 @@ var upload = multer();
 var router = express.Router();
 var models = require('../models');
 var async = require('async');
+const _ = require('lodash');
 
 // 리뷰 검색
 // 특정 유저가 좋아요 한 리뷰
@@ -23,42 +24,6 @@ router.post('/', regisReview);
 
 // 리뷰 수정
 router.put('/:idx', modifyReview);
-
-// 좋아요 한 리뷰 조회
-// router.get('/perfer/:idx', perferReview);
-
-// 한 식당에 대한 리뷰 조회
-// router.get('/res/:idx', resReview)
-
-// 인기 리뷰 조회(전체조회)
-// router.get('/', popularReview);
-
-// 방 안에서의 리뷰 조회 params로 방 번호를 받음
-router.get('/inboard/:idx', (req, res) => {
-  let result = [];
-  let idx = req.params.idx;
-
-  models.Review.findAll({where: {review_boardid : idx}})
-  .then((reviews) => {
-    for(let i=0; i<reviews.length; i++) {
-      result[i] = reviews[i].dataValues;
-    }
-    res.status(200).json({
-      status: 'Success',
-      message: '',
-      values: result
-    });
-  })
-  .catch((err) => {
-    res.status(500).json({
-      status: 'Error',
-      message: err.message
-    });
-  });
-});
-
-// 특정 리뷰 조회
-// router.get('/:idx', certainReviewInfo);
 
 // 리뷰 작성 post, body
 function regisReview(req, res) {
@@ -85,128 +50,6 @@ function regisReview(req, res) {
       result.reason = err;
       res.status(400).json(result);
     });
-  });
-}
-
-// 좋아요 한 리뷰 조회
-function perferReview(req, res){
-  var result = {
-    review : null,
-    status : null,
-    reason : null
-  };
-
-  let user_id = req.params.idx;
-  let review_id = [];
-
-  models.Review_Response.findAll({where: {rvr_userid : user_id}})
-  .then((response) => {
-    for(var i =0; i<response.length; i++){
-      review_id[i] = response[i].dataValues.rvr_reviewid;
-    }
-    models.Review.findAll({where: {review_id : review_id}})
-    .then((review) => {
-      if(review == null){
-        result.status = 'F';
-        result.reason = 'not find review';
-        res.status(200).json(result);
-      }
-      else {
-        result.review = review;
-        result.status = 'S';
-        res.status(200).json(result);
-      }
-    }, (errOfReviewFind) => {
-      result.status = 'F';
-      result.reason = errOfReviewFind;
-      res.status(500).json(result);
-    });
-  }, (errOfResponse) => {
-    result.status = 'F';
-    result.reason = errOfResponse;
-    res.status(500).json(result);
-  });
-}
-
-// 한 식당에 대한 리뷰 조회
-function resReview(req, res){
-  let result = {
-    review : null,
-    status : null,
-    reason : null
-  };
-  let resId = req.params.idx;
-
-  models.Review.findAll({where: {review_resid: resId}}).then(function(review){
-    if(review == null){
-      result.status = 'F';
-      result.reason = 'not find review';
-      res.status(200).json(result);
-    }
-    else{
-      result.review = review;
-      result.status = 'S';
-      res.status(200).json(result);
-    }
-  },function(err){
-    result.status = 'F';
-    result.reason = err;
-    res.status(400).json(result);
-  });
-}
-
-
-//인기 리뷰 조회 get
-function popularReview(req, res){
-  var result = {
-      reason : null,
-      review : null
-  };
-
-  models.Review.sequelize.query('select * from review order by review_like desc')
-  .then((ret) => {
-    if(ret == null) {
-      res.status(200);
-      result.status = 'F';
-      result.reason = 'not find board';
-      res.json(result);
-    } else {
-      console.log(ret[0]);
-      result.status = 'S';
-      result.review = ret[0];
-      res.json(result);
-    }
-  }, (err) => {
-    console.log(err);
-    res.status(500);
-    result.status = 'F';
-    result.reason = err.message;
-    res.json(result);
-  });
-}
-
-// 특정 리뷰 조회 , get, params로 review_id 받음
-function certainReviewInfo(req, res) {
-  let idx = req.params.idx;
-  let result = {};
-
-  models.Review.findById(idx)
-  .then((ret) => {
-    if (!ret) {
-      result.status = 'F';
-      result.reason = 'not find review';
-      res.status(200).json(result);
-    } else {
-      console.log(ret);
-      result.status = 'S';
-      result.review = ret;
-      res.status(200).json(result);
-    }
-  }, function(err) {
-    console.log(err);
-    result.status = 'F';
-    result.reason = err.message;
-    res.status(500).json(result);
   });
 }
 
@@ -275,98 +118,116 @@ function findAll(req, res) {
   if('res_id' in req.query) data.where.review_resid = Number(req.query.res_id);
 
   models.Review.findAll(data)
-  .then(reviews => {
-    if(!reviews || reviews.length==0) {
+    .then((reviews) => {
+      if(reviews)
+        return reviews;
       res.status(200).json({
         status: 'Failure',
         message: 'Not found.',
       });
-    }
-    return reviews;
-  })
-  .then(reviews => new Promise((resolve, reject) => {
-    async.map(reviews, (review, callback) => {
-      models.User.findById(review.review_uid)
-      .then(user => {
-        review.review_username = '유저 이름';
-        review.review_nickname = '유저 별명';
-        if(user) {
-          if (user.user_name) review.review_username = user.user_name;
-          if (user.user_nickname) review.review_nickname = user.user_nickname;
-        }
-        callback(null, review);
-      })
-      .catch(err => { callback(err, review); });
-    }, (err, results) => {
-      if(err) {
-        res.status(500).json({
-          status: 'Error',
-          message: err.message,
-        });
-      } else {
-        resolve(results);
+      return;
+    })
+    .then((reviews) => {
+      if(!('board_name' in req.query)) {
+        return ({ reviews });
       }
-    });
-  }))
-  .then(reviews => new Promise((resolve, reject) => {
-    async.map(reviews, (review, callback) => {
-      models.Board.findById(review.review_boardid)
-      .then(board => {
-        review.review_boardname = '방 이름';
-        if(board) {
-          if(board.board_name) review.review_boardname = board.board_name;
-        }
-        callback(null, review);
-      })
-      .catch(err => { callback(err, review); });
-    }, (err, results) => {
-      if(err) {
-        res.status(500).json({
-          status: 'Error',
-          message: err.message,
+      return new Promise((resolve, reject) => {
+      models.Board.findAll({ where: { board_name : { like: '%' + req.query.board_name + '%' }}})
+        .then((boards) => {
+          let bIds = [];
+          _.forEach(boards, (board) => {
+            bIds.push(board.dataValues.board_id);
+          });
+          let ret = [];
+          _.forEach(reviews, (review) => {
+            if(bIds.indexOf(review.review_boardid) !== -1) {
+              ret.push(review);
+            }
+          });
+          resolve({ reviews: ret });
+        })
+        .catch((err) => {
+          reject({ err: 'board' });
         });
-      } else {
-        resolve(results);
-      }
-    });
-  }))
-  .then(reviews => new Promise((resolve, reject) => {
-    async.map(reviews, (review, callback) => {
-      models.Restaurant.findById(review.res_id)
-      .then(restaurant => {
-        review.review_resname = '식당 이름';
-        review.review_resadd  = '식당 주소';
-        if(restaurant) {
-          if('res_name' in restaurant) review.review_resname = restaurant.res_name;
-          if('res_address' in restaurant) review.review_resadd = restaurant.res_address;
+      });
+    })
+    .then(({ reviews }) => new Promise((resolve, reject) => {
+      async.map(reviews, (review, callback) => {
+        models.User.findById(review.review_uid)
+        .then(user => {
+          review.review_username = '유저 이름';
+          review.review_nickname = '유저 별명';
+          review.dataValues.review_userimage = '유저 이미지';
+          if(user) {
+            review.review_username = user.user_name;
+            review.review_nickname = user.user_nickname;
+            review.dataValues.review_userimage = user.user_image;
+          }
+          callback(null, review);
+        })
+        .catch(err => { callback(err, review); });
+      }, (err, results) => {
+        if(err) {
+          reject({ err: 'review' });
+        } else {
+          resolve({ reviews: results });
         }
-        callback(null, review);
-      })
-      .catch(err => { callback(err, review); });
-    }, (err, results) => {
-      if(err) {
-        res.status(500).json({
-          status: 'Error',
-          message: err.message,
-        });
-      } else {
-        resolve(results);
-      }
+      });
+    }))
+    .then(({ reviews }) => new Promise((resolve, reject) => {
+      async.map(reviews, (review, callback) => {
+        console.log('review_boardid:', review.review_boardid);
+        models.Board.findById(review.review_boardid)
+          .then((board) => {
+            review.dataValues.review_boardname = '방 이름';
+            if(board) {
+              review.dataValues.review_boardname = board.board_name;
+            }
+            callback(null, review);
+          })
+          .catch(err => { callback(err, review); });
+      }, (err, results) => {
+        if(err) {
+          reject({ err: 'board' });
+        } else {
+          resolve({ reviews: results });
+        }
+      });
+    }))
+    .then(({ reviews }) => new Promise((resolve, reject) => {
+      async.map(reviews, (review, callback) => {
+        models.Restaurant.findById(review.review_resid)
+          .then((restaurant) => {
+            review.review_resname = '식당 이름';
+            review.review_resadd  = '식당 주소';
+            if(restaurant) {
+              review.review_resname = restaurant.res_name;
+              review.review_resadd = restaurant.res_address;
+            }
+            callback(null, review);
+          })
+          .catch(err => { callback(err, review); });
+      }, (err, results) => {
+        if(err) {
+          reject({ err: 'restaurant' });
+        } else {
+          resolve({ reviews: results });
+        }
+      });
+    }))
+    .then(({ reviews }) => {
+      res.status(200).json({
+        status: 'Success',
+        message: 'Found.',
+        values: reviews,
+      });
+    })
+    .catch(({ err }) => {
+      res.status(500).json({
+        status: 'Error',
+        message: err,
+      });
     });
-  }))
-  .then(reviews => {
-    res.status(200).json({
-      status: 'Success',
-      message: 'Found.',
-      values: reviews,
-    });
-  })
-  .catch(err => {
-    res.status(500).json({
-      status: 'Error',
-      message: err.message,
-    });
-  });
 }
 
 module.exports = router;
