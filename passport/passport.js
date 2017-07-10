@@ -4,22 +4,22 @@ const models = require('./../models');
 
 passport.use(new LocalStrategy({
     usernameField: 'email',
-    passwordField: 'password'
+    passwordField: 'password', 
   }, (username, password, done) => {
     models.User.findOne({where: {user_email: username}})
       .then((user) => {
         if (!user) {
-          return done(null, false, { message: '존재하지 않는 아이디입니다' }); // 임의 에러 처리
+          done(null, false, { message: '존재하지 않는 아이디입니다' }); // 임의 에러 처리
         }
         else if(user.dataValues.user_password === password) {             // 검증 성공
-          return done(null, user);
+          done(null, user.dataValues);
         }
         else {
-          return done(null, false, { message: '비밀번호가 틀렸습니다' });  // 임의 에러 처리
+          done(null, false, { message: '비밀번호가 틀렸습니다' });  // 임의 에러 처리
         }
       })
       .catch((err) => {
-        return done(err, false);
+        done(err, false);
       });
 }));
 
