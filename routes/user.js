@@ -175,20 +175,25 @@ router.post('/loginpp', passport.authenticate('local', {
   });
 });
 
-router.get('/loginpp/1', (req, res) => {
-  models.User.find({ limit: 10 })
-    .then((user) => {
-      console.log(user.dataValues);
-      return console.log(setTimeout(function(){ console.log("Hello"); }, 3000));
-    })
-    .then(() => {
-      res.status(200).send('hi');
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+/**
+ *  POST /users/login/facebook
+ */
+router.get('/login/facebook', (req, res, next) => {
+  passport.authenticate('facebook', (err, user, info) => {
+    console.log(err);
+    console.log(user);
+    console.log(info);
+    res.status(200).send('test facebook login');
+  })(req, res, next);
+});
 
-
+router.post('/login/facebook', (req, res, next) => {
+  passport.authenticate('facebook', (err, user, info) => {
+    console.log(err);
+    console.log(user);
+    console.log(info);
+    res.status(200).send('test facebook login');
+  })(req, res, next);
 });
 
 function getUsers(req, res, user_id=null) {
