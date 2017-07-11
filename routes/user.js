@@ -163,21 +163,44 @@ router.delete('/', (req, res) => {
   res.status(200).send('DELETE /user/{user_id}');
 });
 
+
 /**
  *  POST /users/loginpp
  */
-router.post('/loginpp', passport.authenticate('local', {
-  failureRedirect: '/',
-}), (req, res) => {
-  res.status(200).json({
-    status: 'Success',
-    message: 'Login successfully',
-  });
-});
+ router.post('/loginpp', (req, res, next) => {
+   passport.authenticate('local', (err, user, info) => {
+     if (err || !user) {
+       return res.status(400).json({
+         status: 'Failure',
+         message: info.message,
+       });
+     }
+     req.logIn(user, (err) => {
+       if (err) { return res.status(500).json({
+         status: 'Error',
+         message: 'error in passport.aithenticate / req.logIn',
+       }); }
+       return res.status(200).json({
+         status: 'Success',
+         message: 'login success',
+         user_id: user.user_id,
+       });
+     });
+   })(req, res);
+ });
 
 /**
  *  POST /users/login/facebook
  */
+router.post('/login/facebook', (req, res, next) => {
+ passport.authenticate('facebook', (err, user, info) => {
+   console.log(err);
+   console.log(user);
+   console.log(info);
+   res.status(200).send('test facebook login');
+ })(req, res, next);
+
+
 router.get('/login/facebook', (req, res, next) => {
   passport.authenticate('facebook', (err, user, info) => {
     console.log(err);
@@ -187,14 +210,6 @@ router.get('/login/facebook', (req, res, next) => {
   })(req, res, next);
 });
 
-router.post('/login/facebook', (req, res, next) => {
-  passport.authenticate('facebook', (err, user, info) => {
-    console.log(err);
-    console.log(user);
-    console.log(info);
-    res.status(200).send('test facebook login');
-  })(req, res, next);
-});
 
 function getUsers(req, res, user_id=null) {
   console.log('data');
@@ -218,17 +233,17 @@ function getUsers(req, res, user_id=null) {
     if(users.length == 0) {
       res.status(200).json({
         status: 'Success',
-        message: 'Not found.'
+        message: 'Not found'
       });
     }
-    for (var i=0; i<users.length; i++) {
+    for (let i=0; i<users.length; i++) {
       results[i] = users[i];
     }
     console.log('results:', results);
 
     res.status(200).json({
       status: 'Success',
-      message: 'Found.',
+      message: 'Found',
       values: results
     });
   })
@@ -261,7 +276,7 @@ function checkEmail(req, res) {
       });
     }
   })
-  .catch((err) =>{
+  .catch((err) => {
     res.status(500).json({
       status: 'Error',
       message: err.message
